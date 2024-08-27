@@ -91,13 +91,18 @@ class InferenceClient():
 
         if stream:
             # Returns generator func
-            self.process_stream(response, history)
+            partial_message = ""
+            for chunk in response:
+                if chunk.choices[0].delta.content is not None:
+                    partial_message = partial_message + chunk.choices[0].delta.content
+                    yield partial_message
+
+            history.append({"role":"assistant", "content": partial_message})
 
         else:
-            # Non-streaming case
-            message = response.choices[0].message.content
-            history.append({"role":"assistant", "content": message})
-            return message
+            self.process_response(response, history)
+
+        return
         
     def set_sys_prompt(self, new_sys):
         self.global_sys_prompt = new_sys
@@ -105,15 +110,20 @@ class InferenceClient():
     def set_model(self, new_model):
         self.model = new_model
 
-    # Function that is a generator
-    def process_stream(self, response, history):
-        partial_message = ""
-        for chunk in response:
-            if chunk.choices[0].delta.content is not None:
-                partial_message = partial_message + chunk.choices[0].delta.content
-                yield partial_message
+    def process_response(self, response, history):
+        message = response.choices[0].message.content
+        history.append({"role":"assistant", "content": message})
+        return message
 
-        history.append({"role":"assistant", "content": partial_message})
+    # Function that is a generator
+    # def process_stream(self, response, history):
+    #     partial_message = ""
+    #     for chunk in response:
+    #         if chunk.choices[0].delta.content is not None:
+    #             partial_message = partial_message + chunk.choices[0].delta.content
+    #             yield partial_message
+
+    #     history.append({"role":"assistant", "content": partial_message})
 
         
 
